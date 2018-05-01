@@ -14,6 +14,7 @@ from spacetime.connectors.spacetime import ObjectlessSpacetimeConnection
 from rtypes.dataframe.dataframe_client import dataframe_client
 from spacetime.client.frame import ClientFrame
 from applications.search.crawler_frame import CrawlerFrame
+from time import time
 
 logger = logging.getLogger(__name__)
 LOG_HEADER = "[CHECKFRONTIER]"

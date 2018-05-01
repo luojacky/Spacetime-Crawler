@@ -66,9 +66,18 @@ def extract_next_links(rawDataObj):
     
     Suggested library: lxml
     '''
+    url = rawDataObj.url
+    if(rawDataObj.is_redirected):
+        url = rawDataObj.final_url
     soup = BeautifulSoup(rawDataObj.content, 'html.parser')
     for link in soup.find_all('a'):
-        print(link.get('href'))
+        address = link.get('href')
+        if address != None and len(address) > 1:
+            if address[0] == '/' and address[1] != '/':
+                outputLinks.append(url+address)
+            else:
+                if address[0] == 'h' or address[0:2] == "//":
+                    outputLinks.append(address)
     return outputLinks
 
 def is_valid(url):
