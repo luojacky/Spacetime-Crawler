@@ -66,7 +66,9 @@ def extract_next_links(rawDataObj):
     
     Suggested library: lxml
     '''
-    
+    soup = BeautifulSoup(rawDataObj.content, 'html.parser')
+    for link in soup.find_all('a'):
+        print(link.get('href'))
     return outputLinks
 
 def is_valid(url):
