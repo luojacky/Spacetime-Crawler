@@ -42,7 +42,7 @@ class CrawlerFrame(IApplication):
 
     def download_links(self, unprocessed_links):
         for link in unprocessed_links:
-            print "Got a link to download:", link.full_url
+            print "Got a link to download:", link.full_url.encode("utf-8")
             downloaded = link.download()
             links = extract_next_links(downloaded)
             for l in links:
@@ -71,11 +71,10 @@ def extract_next_links(rawDataObj):
         url = rawDataObj.final_url
     soup = BeautifulSoup(rawDataObj.content, 'lxml')
     try:
-        if not (400 <= rawDataObj.http_code <= 599):
-            for link in soup.find_all('a'):
-                href = link.get('href') 
-                if href != None:
-                    outputLinks.append(urljoin(url,link.get('href')))
+        for link in soup.find_all('a'):
+            href = link.get('href')
+            if href != None:
+                outputLinks.append(urljoin(url,link.get('href')))
     except:
         pass
     return outputLinks
@@ -90,7 +89,7 @@ def is_valid(url):
     parsed = urlparse(url)
     if parsed.scheme not in set(["http", "https"]):
         return False
-    check_repeating = r"^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$"   # first group checks anywhere, second group checks directly repeating
+    check_repeating = r"^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$"   # first group checks anywhere for repeats, second group checks directly repeating words
     check_calendar = r"^.*calendar.*$"
     check_length = r"^.*/[^/]{200,}$"
     check_equal = r"^.*/.*?=.*?=.*?=.*?$"
@@ -101,7 +100,6 @@ def is_valid(url):
             + "|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|epub|dll|cnf|tgz|sha1" \
             + "|thmx|mso|arff|rtf|jar|csv"\
             + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower()) \
-            and bool(parsed.netloc) \
             and not re.match(check_repeating, url) \
             and not re.match(check_calendar, url) \
             and not re.match(check_length, url) \
