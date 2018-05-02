@@ -70,8 +70,13 @@ def extract_next_links(rawDataObj):
     if(rawDataObj.is_redirected):
         url = rawDataObj.final_url
     soup = BeautifulSoup(rawDataObj.content, 'lxml')
-    for link in soup.find_all('a'):
-        outputLinks.append(urljoin(url,link.get('href')))
+    try:
+        for link in soup.find_all('a'):
+            href = link.get('href') 
+            if href != None:
+                outputLinks.append(urljoin(url,link.get('href')))
+    except:
+        pass
     return outputLinks
 
 def is_valid(url):
@@ -84,9 +89,9 @@ def is_valid(url):
     parsed = urlparse(url)
     if parsed.scheme not in set(["http", "https"]):
         return False
-    check_repeating = r"^.*?(\/.+?\/).*?\1.*$|^.*?\/(.+?\/)\2.*$"   # first group checks anywhere, second group checks directly repeating
+    check_repeating = r"^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$"   # first group checks anywhere, second group checks directly repeating
     check_calendar = r"^.*calendar.*$"
-    check_length = r"^.*\/[^\/]{100,}$"
+    check_length = r"^.*/[^/]{100,}$"
     check_equal = r"^.*?=.*?=.*?=.*?$"
     try:
         return ".ics.uci.edu" in parsed.hostname \
@@ -95,10 +100,10 @@ def is_valid(url):
             + "|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|epub|dll|cnf|tgz|sha1" \
             + "|thmx|mso|arff|rtf|jar|csv"\
             + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower()) \
-            and not re.match(check_repeating, parsed.path) \
-            and not re.match(check_calendar, parsed.path) \
-            and not re.match(check_length, parsed.path) \
-            and not re.match(check_equal, parsed.path)
+            and not re.match(check_repeating, url) \
+            and not re.match(check_calendar, url) \
+            and not re.match(check_length, url) \
+            and not re.match(check_equal, url)
 
     except TypeError:
         print ("TypeError for ", parsed)
