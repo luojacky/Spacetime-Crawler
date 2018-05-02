@@ -7,7 +7,7 @@ import re, os
 from time import time
 from uuid import uuid4
 
-from urlparse import urlparse, parse_qs
+from urlparse import urlparse, parse_qs, urljoin
 from uuid import uuid4
 from bs4 import BeautifulSoup
 
@@ -69,15 +69,9 @@ def extract_next_links(rawDataObj):
     url = rawDataObj.url
     if(rawDataObj.is_redirected):
         url = rawDataObj.final_url
-    soup = BeautifulSoup(rawDataObj.content, 'html.parser')
+    soup = BeautifulSoup(rawDataObj.content, 'lxml')
     for link in soup.find_all('a'):
-        address = link.get('href')
-        if address != None and len(address) > 1:
-            if address[0] == '/' and address[1] != '/':
-                outputLinks.append(url+address)
-            else:
-                if address[0] == 'h' or address[0:2] == "//":
-                    outputLinks.append(address)
+        outputLinks.append(urljoin(url,link.get('href')))
     return outputLinks
 
 def is_valid(url):
@@ -90,13 +84,21 @@ def is_valid(url):
     parsed = urlparse(url)
     if parsed.scheme not in set(["http", "https"]):
         return False
+    check_repeating = r"^.*?(\/.+?\/).*?\1.*$|^.*?\/(.+?\/)\2.*$"   # first group checks anywhere, second group checks directly repeating
+    check_calendar = r"^.*calendar.*$"
+    check_length = r"^.*\/[^\/]{100,}$"
+    check_equal = r"^.*?=.*?=.*?=.*?$"
     try:
         return ".ics.uci.edu" in parsed.hostname \
             and not re.match(".*\.(css|js|bmp|gif|jpe?g|ico" + "|png|tiff?|mid|mp2|mp3|mp4"\
             + "|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf" \
             + "|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|epub|dll|cnf|tgz|sha1" \
             + "|thmx|mso|arff|rtf|jar|csv"\
-            + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower())
+            + "|rm|smil|wmv|swf|wma|zip|rar|gz|pdf)$", parsed.path.lower()) \
+            and not re.match(check_repeating, parsed.path) \
+            and not re.match(check_calendar, parsed.path) \
+            and not re.match(check_length, parsed.path) \
+            and not re.match(check_equal, parsed.path)
 
     except TypeError:
         print ("TypeError for ", parsed)
