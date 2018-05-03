@@ -10,6 +10,7 @@ from uuid import uuid4
 from urlparse import urlparse, parse_qs, urljoin
 from uuid import uuid4
 from bs4 import BeautifulSoup
+from tldextract import tldextract
 
 logger = logging.getLogger(__name__)
 LOG_HEADER = "[CRAWLER]"
@@ -42,7 +43,7 @@ class CrawlerFrame(IApplication):
 
     def download_links(self, unprocessed_links):
         for link in unprocessed_links:
-            print "Got a link to download:", link.full_url.encode("utf-8")
+            print "Got a link to download:", link.full_url
             downloaded = link.download()
             links = extract_next_links(downloaded)
             for l in links:
@@ -53,7 +54,10 @@ class CrawlerFrame(IApplication):
         print (
             "Time time spent this session: ",
             time() - self.starttime, " seconds.")
-    
+
+subdomain_count = {}
+links = {}
+
 def extract_next_links(rawDataObj):
     outputLinks = []
     '''
@@ -69,14 +73,30 @@ def extract_next_links(rawDataObj):
     url = rawDataObj.url
     if(rawDataObj.is_redirected):
         url = rawDataObj.final_url
-    soup = BeautifulSoup(rawDataObj.content, 'lxml')
-    try:
-        for link in soup.find_all('a'):
-            href = link.get('href')
-            if href != None:
-                outputLinks.append(urljoin(url,link.get('href')))
-    except:
-        pass
+    subdomain = tldextract.extract(url).subdomain
+    if subdomain != "":
+        if subdomain not in subdomain_count:
+            subdomain_count[subdomain] = 1
+        else:
+            subdomain_count[subdomain] += 1
+    if not (400 <= rawDataObj.http_code <= 599):
+        soup = BeautifulSoup(rawDataObj.content, 'lxml')
+        links[url] = 0
+        try:
+            for link in soup.find_all('a'):
+                links[url] += 1
+                href = link.get('href')
+                if href != None:
+                    outputLinks.append(urljoin(url,href).encode("utf-8"))
+        except:
+            pass
+    with open("analytics.txt", 'w') as outfile:
+        outfile.write("Subdomains and their number of urls processed:\n")
+        for subdomain in subdomain_count:
+            outfile.write("    " + subdomain + ": " +str(subdomain_count[subdomain]) + "\n")
+        sorted_links = sorted(links.items(), key=lambda x:x[1], reverse=True)
+        outfile.write("The link with the most out links:\n")
+        outfile.write("    " + sorted_links[0][0] + ": " + str(sorted_links[0][1]))
     return outputLinks
 
 def is_valid(url):
@@ -91,8 +111,8 @@ def is_valid(url):
         return False
     check_repeating = r"^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$"   # first group checks anywhere for repeats, second group checks directly repeating words
     check_calendar = r"^.*calendar.*$"
-    check_length = r"^.*/[^/]{200,}$"
-    check_equal = r"^.*/.*?=.*?=.*?=.*?$"
+    check_length = r"^.*/[^/]{150,}$"
+    check_equal = r"^.*?=.*?=.*?=.*?$"
     try:
         return ".ics.uci.edu" in parsed.hostname \
             and not re.match(".*\.(css|js|bmp|gif|jpe?g|ico" + "|png|tiff?|mid|mp2|mp3|mp4"\

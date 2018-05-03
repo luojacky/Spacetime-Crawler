@@ -1,0 +1,6 @@
+Subdomains and their number of urls processed:
+    mhcid.ics: 2
+    ngs.ics: 2
+    www.ics: 29
+The link with the most out links:
+    http://www.ics.uci.edu/community/news/index.php: 309
