@@ -84,16 +84,16 @@ def extract_next_links(rawDataObj):
         links[url] = 0
         try:
             for link in soup.find_all('a'):
-                links[url] += 1
-                href = link.get('href')
-                if href != None:
-                    outputLinks.append(urljoin(url,href).encode("utf-8"))
+                href = urljoin(url,link.get('href')).encode("utf-8")
+                outputLinks.append(href)
+                if href != url and is_valid(href):
+                    links[url] += 1
         except:
             pass
     with open("analytics.txt", 'w') as outfile:
         outfile.write("Subdomains and their number of urls processed:\n")
-        for subdomain in subdomain_count:
-            outfile.write("    " + subdomain + ": " +str(subdomain_count[subdomain]) + "\n")
+        for subdomain in sorted(subdomain_count.items(), key=lambda x:x[1], reverse=True):
+            outfile.write("    " + subdomain[0] + ": " +str(subdomain[1]) + "\n")
         sorted_links = sorted(links.items(), key=lambda x:x[1], reverse=True)
         outfile.write("The link with the most out links:\n")
         outfile.write("    " + sorted_links[0][0] + ": " + str(sorted_links[0][1]))
@@ -111,8 +111,9 @@ def is_valid(url):
         return False
     check_repeating = r"^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$"   # first group checks anywhere for repeats, second group checks directly repeating words
     check_calendar = r"^.*calendar.*$"
-    check_length = r"^.*/[^/]{150,}$"
+    check_length = r"^.*/[^/]{100,}$"
     check_equal = r"^.*?=.*?=.*?=.*?$"
+    check_page = r"^.*?page.*?page.*?$"
     try:
         return ".ics.uci.edu" in parsed.hostname \
             and not re.match(".*\.(css|js|bmp|gif|jpe?g|ico" + "|png|tiff?|mid|mp2|mp3|mp4"\
@@ -123,7 +124,8 @@ def is_valid(url):
             and not re.match(check_repeating, url) \
             and not re.match(check_calendar, url) \
             and not re.match(check_length, url) \
-            and not re.match(check_equal, url)
+            and not re.match(check_equal, url) \
+            and not re.match(check_page, url)
 
     except TypeError:
         print ("TypeError for ", parsed)
